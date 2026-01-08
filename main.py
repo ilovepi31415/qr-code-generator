@@ -1,5 +1,6 @@
 import sys
 from PIL import Image
+from make_square import make_square
 
 SIZE = 1000
 
@@ -26,7 +27,11 @@ def main():
     #     for j in range(img.size[1]):    # For every row
     #         pixels[i, j] = (i//4, j//4, 100) # set the colour accordingly
 
-    img.show()
+    make_square((0, 0), 5, True, img)
+    make_square((100, 200), 25, True, img)
+    make_square((105, 205), 10, False, img)
+
+    img.show("QR Code")
 
 if __name__ == "__main__":
     main()
