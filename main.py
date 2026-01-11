@@ -4,9 +4,11 @@ from enum import Enum
 from make_square import make_square, make_corner
 
 TYPE1_SIZE = 21
+LOW_QUALITY = int('11', 2)
 SCALE = 8
 
 SIZE = TYPE1_SIZE
+QUALITY = LOW_QUALITY
 
 class Direction(Enum):
     UP = 1
@@ -29,7 +31,6 @@ def main():
     for bit in length:
         bits.append(int(bit))
     
-
     for byte in url_bytes:
         for i in range(7, -1, -1):
             bits.append((byte >> i) & 1)
@@ -44,19 +45,23 @@ def main():
     #         pixels[i, j] = (i//4, j//4, 100) # set the colour accordingly
 
     # Basic Formatting on all QR Codes
-    make_square((0, 0), 8, True, img, SCALE)
-    make_square((0, SIZE-8), 8, True, img, SCALE)
-    make_square((SIZE-8, 0), 8, True, img, SCALE)
+    make_square((0, 0), 8, False, img, SCALE)
+    make_square((0, SIZE-8), 8, False, img, SCALE)
+    make_square((SIZE-8, 0), 8, False, img, SCALE)
+
+    make_square((8, SIZE-8), 1, True, img, SCALE)
 
     make_corner((0, 0), img, SCALE)
     make_corner((0, SIZE - 7), img, SCALE)
     make_corner((SIZE - 7, 0), img, SCALE)
 
     for y in range(7, SIZE-7):
-        make_square((6, y), 1, y % 2 == 1, img, SCALE)
+        make_square((6, y), 1, y % 2 == 0, img, SCALE)
 
     for x in range(7, SIZE-7):
-        make_square((x, 6), 1, x % 2 == 1, img, SCALE)
+        make_square((x, 6), 1, x % 2 == 0, img, SCALE)
+
+
 
     # Add data into image
     stream_data(bits, img)
