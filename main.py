@@ -19,9 +19,17 @@ def main():
     
     url = sys.argv[1]
     url_bytes = url.encode()
-    print(len(url_bytes))
+    length = f'{len(url_bytes):08b}'
 
     bits = []
+
+    encoding_method = [0, 1, 0, 0]
+    for bit in encoding_method:
+        bits.append(bit)
+    for bit in length:
+        bits.append(int(bit))
+    
+
     for byte in url_bytes:
         for i in range(7, -1, -1):
             bits.append((byte >> i) & 1)
