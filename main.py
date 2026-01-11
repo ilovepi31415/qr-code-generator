@@ -1,8 +1,11 @@
 import sys
 from PIL import Image
-from make_square import make_square
+from make_square import make_square, make_corner
 
-SIZE = 1000
+TYPE1_SIZE = 21
+SCALE = 50
+
+SIZE = TYPE1_SIZE
 
 def main():
     if len(sys.argv) < 2:
@@ -20,16 +23,22 @@ def main():
     
     print(bits)
     # PIL accesses images in Cartesian co-ordinates, so it is Image[columns, rows]
-    img = Image.new( 'RGB', (SIZE, SIZE), "black") # create a new black image
+    img = Image.new( 'RGB', (SIZE * SCALE, SIZE * SCALE), "red") # create a new black image
     pixels = img.load() # create the pixel map
 
     # for i in range(img.size[0]):    # for every col:
     #     for j in range(img.size[1]):    # For every row
     #         pixels[i, j] = (i//4, j//4, 100) # set the colour accordingly
 
-    make_square((0, 0), 5, True, img)
-    make_square((100, 200), 25, True, img)
-    make_square((105, 205), 10, False, img)
+    make_corner((0, 0), img, SCALE)
+    make_corner((0, SIZE - 7), img, SCALE)
+    make_corner((SIZE - 7, 0), img, SCALE)
+
+    for y in range(7, SIZE-7):
+        make_square((6, y), 1, y % 2 == 1, img, SCALE)
+
+    for x in range(7, SIZE-7):
+        make_square((x, 6), 1, x % 2 == 1, img, SCALE)
 
     img.show("QR Code")
 
