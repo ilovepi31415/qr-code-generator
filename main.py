@@ -5,12 +5,16 @@ from make_square import make_square, make_corner
 from bch import encode_bch
 
 TYPE1_SIZE = 21
+TYPE1_LENGTH = 17
 LOW_QUALITY = int('11', 2)
 MASKPATTERN = int('011', 2)
-SCALE = 20
+PADDING_1 = '11101100'
+PADDING_2 = '00010001'
 
+SCALE = 20
 SIZE = TYPE1_SIZE
 QUALITY = LOW_QUALITY
+MAXLENGTH = TYPE1_LENGTH
 
 class Direction(Enum):
     UP = 1
@@ -22,11 +26,15 @@ def main():
         return
     
     url = sys.argv[1]
+    if len(url) > MAXLENGTH:
+        print("ERROR: Message too long")
+        sys.exit(1)
     url_bytes = url.encode()
     length = f'{len(url_bytes):08b}'
 
     bits = []
 
+    # Add encoding bits
     encoding_method = [0, 1, 0, 0]
     for bit in encoding_method:
         bits.append(bit)
@@ -36,15 +44,24 @@ def main():
     for byte in url_bytes:
         for i in range(7, -1, -1):
             bits.append((byte >> i) & 1)
+
+    # Pad bytestream to max length
+    while len(bits) < (MAXLENGTH + 1) * 8:
+        for bit in PADDING_1:
+            bits.append(int(bit))
+        if len(bits) < (MAXLENGTH + 1) * 8:
+            for bit in PADDING_2:
+                bits.append(int(bit))
+    
+    # Add ending character to bytestream
+    for bit in '0011':
+        bits.append(int(bit))
+
     
     print(bits)
     # PIL accesses images in Cartesian co-ordinates, so it is Image[columns, rows]
     img = Image.new( 'RGB', (SIZE * SCALE, SIZE * SCALE), (255, 0, 0)) # create a new black image
     pixels = img.load() # create the pixel map
-
-    # for i in range(img.size[0]):    # for every col:
-    #     for j in range(img.size[1]):    # For every row
-    #         pixels[i, j] = (i//4, j//4, 100) # set the colour accordingly
 
     # Basic Formatting on all QR Codes
     make_square((0, 0), 8, False, img, SCALE)
@@ -77,7 +94,6 @@ def main():
         (8, SIZE-6), (8, SIZE-7), (SIZE-8, 8), (SIZE-7, 8), (SIZE-6, 8),
         (SIZE-5, 8), (SIZE-4, 8), (SIZE-3, 8), (SIZE-2, 8), (SIZE-1, 8) 
     ]
-
     for i in range(len(format_coords_1)):
         make_square(format_coords_1[i], 1, (encoded_format >> (15 - i - 1)) & 1 == 1, img, SCALE)
         make_square(format_coords_2[i], 1, (encoded_format >> (15 - i - 1)) & 1 == 1, img, SCALE)
