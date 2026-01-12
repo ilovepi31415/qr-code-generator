@@ -2,10 +2,12 @@ import sys
 from PIL import Image
 from enum import Enum
 from make_square import make_square, make_corner
+from bch import encode_bch
 
 TYPE1_SIZE = 21
 LOW_QUALITY = int('11', 2)
-SCALE = 8
+MASKPATTERN = int('011', 2)
+SCALE = 20
 
 SIZE = TYPE1_SIZE
 QUALITY = LOW_QUALITY
@@ -61,7 +63,24 @@ def main():
     for x in range(7, SIZE-7):
         make_square((x, 6), 1, x % 2 == 0, img, SCALE)
 
+    # Add format data into image
+    format = (QUALITY << 2) + MASKPATTERN
+    encoded_format = encode_bch(format)
+    print(encoded_format)
+    format_coords_1 = [
+        (0, 8), (1, 8), (2, 8), (3, 8), (4, 8),
+        (5, 8), (7, 8), (8, 8), (8, 7), (8, 5),
+        (8, 4), (8, 3), (8, 2), (8, 1), (8, 0)
+        ]
+    format_coords_2 = [
+        (8, SIZE-1), (8, SIZE-2), (8, SIZE-3), (8, SIZE-4), (8, SIZE-5),
+        (8, SIZE-6), (8, SIZE-7), (SIZE-8, 8), (SIZE-7, 8), (SIZE-6, 8),
+        (SIZE-5, 8), (SIZE-4, 8), (SIZE-3, 8), (SIZE-2, 8), (SIZE-1, 8) 
+    ]
 
+    for i in range(len(format_coords_1)):
+        make_square(format_coords_1[i], 1, (encoded_format >> (15 - i - 1)) & 1 == 1, img, SCALE)
+        make_square(format_coords_2[i], 1, (encoded_format >> (15 - i - 1)) & 1 == 1, img, SCALE)
 
     # Add data into image
     stream_data(bits, img)
