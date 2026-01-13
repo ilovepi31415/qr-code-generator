@@ -111,6 +111,25 @@ def main():
     # Add data into image
     stream_data(bits, img)
 
+    mask_data(img)
+
+    # Basic Formatting on all QR Codes
+    make_square((0, 0), 8, False, img, SCALE)
+    make_square((0, SIZE-8), 8, False, img, SCALE)
+    make_square((SIZE-8, 0), 8, False, img, SCALE)
+
+    make_square((8, SIZE-8), 1, True, img, SCALE)
+
+    make_corner((0, 0), img, SCALE)
+    make_corner((0, SIZE - 7), img, SCALE)
+    make_corner((SIZE - 7, 0), img, SCALE)
+
+    for y in range(7, SIZE-7):
+        make_square((6, y), 1, y % 2 == 0, img, SCALE)
+
+    for x in range(7, SIZE-7):
+        make_square((x, 6), 1, x % 2 == 0, img, SCALE)
+
     img.show("QR Code")
 
 def stream_data(bits: list[int], img) -> None:
@@ -156,6 +175,12 @@ def is_used(coords, pixels) -> bool:
     x, y = coords
     return pixels[x * SCALE, y * SCALE] != (255, 0, 0)
 
+def mask_data(img: Image):
+    pixels = img.load()
+    for y in range(0, SIZE, 2):
+        for x in range(SIZE):
+            make_square((x, y), 1, pixels[x * SCALE, y * SCALE] != (0, 0, 0), img, SCALE)
+    
+
 if __name__ == "__main__":
     main()
-
