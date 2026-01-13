@@ -11,26 +11,28 @@ def encode_rs(input: list[int]):
             block *= 2
             block += copied.pop(0)
         blocks.append(block)
+    blocks += [0] * 7
     print(blocks, len(blocks))
 
-    dividend = 0
-    for term in input:
-        dividend *= 2
-        dividend += term
-    print(dividend)
+    for i in range(len(blocks) - 7):
+        block = blocks[i]
+        if block != 0:
+            for j in range(len(generator_polynomial)):
+                blocks[i + j] ^= gf_multiply(generator_polynomial[j], block)
 
-    generator_total = 0
-    for term in generator_polynomial:
-        generator_total *= 128
-        generator_total += term
+    return blocks[-7:]
 
-    while dividend >= 2 ** (7 * 8):
-        divisor = generator_total
-        while math.floor(math.log(divisor, 2)) < math.floor(math.log(dividend, 2)):
-            divisor <<= 1
-        dividend ^= divisor
-
-    return dividend
+def gf_multiply(a, b):
+    primitive_polynomial = 0x11D
+    result = 0
+    while b > 0:
+        if b % 2 == 1:
+            result ^= a
+        a <<= 1
+        if a >= 256:
+            a ^= primitive_polynomial
+        b >>= 1
+    return result
 
 if __name__ == "__main__":
     print(encode_rs(

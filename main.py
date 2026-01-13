@@ -47,62 +47,30 @@ def main():
         for i in range(7, -1, -1):
             bits.append((byte >> i) & 1)
 
+    # Add ending character to bytestream
+    for bit in '0000':
+        bits.append(int(bit))
+
     # Pad bytestream to max length
-    while len(bits) < (MAXLENGTH + 1) * 8:
+    while len(bits) < (MAXLENGTH + 2) * 8:
         for bit in PADDING_1:
             bits.append(int(bit))
         if len(bits) < (MAXLENGTH + 1) * 8:
             for bit in PADDING_2:
                 bits.append(int(bit))
     
-    # Add ending character to bytestream
-    for bit in '0011':
-        bits.append(int(bit))
-
-    
     print(bits)
     # PIL accesses images in Cartesian co-ordinates, so it is Image[columns, rows]
     img = Image.new( 'RGB', (SIZE * SCALE, SIZE * SCALE), (255, 0, 0)) # create a new black image
     pixels = img.load() # create the pixel map
 
-    # Basic Formatting on all QR Codes
-    make_square((0, 0), 8, False, img, SCALE)
-    make_square((0, SIZE-8), 8, False, img, SCALE)
-    make_square((SIZE-8, 0), 8, False, img, SCALE)
-
-    make_square((8, SIZE-8), 1, True, img, SCALE)
-
-    make_corner((0, 0), img, SCALE)
-    make_corner((0, SIZE - 7), img, SCALE)
-    make_corner((SIZE - 7, 0), img, SCALE)
-
-    for y in range(7, SIZE-7):
-        make_square((6, y), 1, y % 2 == 0, img, SCALE)
-
-    for x in range(7, SIZE-7):
-        make_square((x, 6), 1, x % 2 == 0, img, SCALE)
-
-    # Add format data into image
-    format = (QUALITY << 2) + MASKPATTERN
-    encoded_format = encode_bch(format)
-    print(encoded_format)
-    format_coords_1 = [
-        (0, 8), (1, 8), (2, 8), (3, 8), (4, 8),
-        (5, 8), (7, 8), (8, 8), (8, 7), (8, 5),
-        (8, 4), (8, 3), (8, 2), (8, 1), (8, 0)
-        ]
-    format_coords_2 = [
-        (8, SIZE-1), (8, SIZE-2), (8, SIZE-3), (8, SIZE-4), (8, SIZE-5),
-        (8, SIZE-6), (8, SIZE-7), (SIZE-8, 8), (SIZE-7, 8), (SIZE-6, 8),
-        (SIZE-5, 8), (SIZE-4, 8), (SIZE-3, 8), (SIZE-2, 8), (SIZE-1, 8) 
-    ]
-    for i in range(len(format_coords_1)):
-        make_square(format_coords_1[i], 1, (encoded_format >> (15 - i - 1)) & 1 == 1, img, SCALE)
-        make_square(format_coords_2[i], 1, (encoded_format >> (15 - i - 1)) & 1 == 1, img, SCALE)
+    add_functional_info(img)
 
     # Get error correction data
     error_correction_value = encode_rs(bits)
-    error_correction_string = f'{error_correction_value:056b}'
+    error_correction_string = ''
+    for block in error_correction_value:
+        error_correction_string += f'{block:08b}'
     print(error_correction_string)
 
     for bit in error_correction_string:
@@ -113,22 +81,8 @@ def main():
 
     mask_data(img)
 
-    # Basic Formatting on all QR Codes
-    make_square((0, 0), 8, False, img, SCALE)
-    make_square((0, SIZE-8), 8, False, img, SCALE)
-    make_square((SIZE-8, 0), 8, False, img, SCALE)
-
-    make_square((8, SIZE-8), 1, True, img, SCALE)
-
-    make_corner((0, 0), img, SCALE)
-    make_corner((0, SIZE - 7), img, SCALE)
-    make_corner((SIZE - 7, 0), img, SCALE)
-
-    for y in range(7, SIZE-7):
-        make_square((6, y), 1, y % 2 == 0, img, SCALE)
-
-    for x in range(7, SIZE-7):
-        make_square((x, 6), 1, x % 2 == 0, img, SCALE)
+    # Fix this after the mask
+    add_functional_info(img)
 
     img.show("QR Code")
 
@@ -177,10 +131,46 @@ def is_used(coords, pixels) -> bool:
 
 def mask_data(img: Image):
     pixels = img.load()
-    for y in range(0, SIZE, 2):
+    for y in range(SIZE):
         for x in range(SIZE):
-            make_square((x, y), 1, pixels[x * SCALE, y * SCALE] != (0, 0, 0), img, SCALE)
+            if y % 2 == 0:
+                make_square((x, y), 1, pixels[x * SCALE, y * SCALE] != (0, 0, 0), img, SCALE)
     
+def add_functional_info(img):
+    # Basic Formatting on all QR Codes
+    make_square((0, 0), 8, False, img, SCALE)
+    make_square((0, SIZE-8), 8, False, img, SCALE)
+    make_square((SIZE-8, 0), 8, False, img, SCALE)
+
+    make_square((8, SIZE-8), 1, True, img, SCALE)
+
+    make_corner((0, 0), img, SCALE)
+    make_corner((0, SIZE - 7), img, SCALE)
+    make_corner((SIZE - 7, 0), img, SCALE)
+
+    for y in range(7, SIZE-7):
+        make_square((6, y), 1, y % 2 == 0, img, SCALE)
+
+    for x in range(7, SIZE-7):
+        make_square((x, 6), 1, x % 2 == 0, img, SCALE)
+
+    # Add format data into image
+    format = (QUALITY << 2) + MASKPATTERN
+    encoded_format = encode_bch(format)
+    print(encoded_format)
+    format_coords_1 = [
+        (0, 8), (1, 8), (2, 8), (3, 8), (4, 8),
+        (5, 8), (7, 8), (8, 8), (8, 7), (8, 5),
+        (8, 4), (8, 3), (8, 2), (8, 1), (8, 0)
+        ]
+    format_coords_2 = [
+        (8, SIZE-1), (8, SIZE-2), (8, SIZE-3), (8, SIZE-4), (8, SIZE-5),
+        (8, SIZE-6), (8, SIZE-7), (SIZE-8, 8), (SIZE-7, 8), (SIZE-6, 8),
+        (SIZE-5, 8), (SIZE-4, 8), (SIZE-3, 8), (SIZE-2, 8), (SIZE-1, 8) 
+    ]
+    for i in range(len(format_coords_1)):
+        make_square(format_coords_1[i], 1, (encoded_format >> (15 - i - 1)) & 1 == 1, img, SCALE)
+        make_square(format_coords_2[i], 1, (encoded_format >> (15 - i - 1)) & 1 == 1, img, SCALE)
 
 if __name__ == "__main__":
     main()

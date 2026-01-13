@@ -1,3 +1,5 @@
+import math
+
 def encode_bch(input: int) -> int:
     generator_polynomial = int('10100110111', 2)
     mask = int('101010000010010', 2)
@@ -7,7 +9,7 @@ def encode_bch(input: int) -> int:
     # Polynomial division in binary
     while dividend >= 2 ** 10:
         divisor = generator_polynomial
-        while (divisor << 1) < dividend:
+        while math.floor(math.log(divisor, 2)) < math.floor(math.log(dividend, 2)):
             divisor <<= 1
         dividend ^= divisor
     
