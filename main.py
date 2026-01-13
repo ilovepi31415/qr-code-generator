@@ -3,6 +3,7 @@ from PIL import Image
 from enum import Enum
 from make_square import make_square, make_corner
 from bch import encode_bch
+from reed_solomon import encode_rs
 
 TYPE1_SIZE = 21
 TYPE1_LENGTH = 17
@@ -25,6 +26,7 @@ def main():
         print("Usage: python3 main.py <url/text>")
         return
     
+    # Find and parse the data argument
     url = sys.argv[1]
     if len(url) > MAXLENGTH:
         print("ERROR: Message too long")
@@ -98,6 +100,14 @@ def main():
         make_square(format_coords_1[i], 1, (encoded_format >> (15 - i - 1)) & 1 == 1, img, SCALE)
         make_square(format_coords_2[i], 1, (encoded_format >> (15 - i - 1)) & 1 == 1, img, SCALE)
 
+    # Get error correction data
+    error_correction_value = encode_rs(bits)
+    error_correction_string = f'{error_correction_value:056b}'
+    print(error_correction_string)
+
+    for bit in error_correction_string:
+        bits.append(int(bit))
+
     # Add data into image
     stream_data(bits, img)
 
@@ -130,7 +140,10 @@ def stream_data(bits: list[int], img) -> None:
             if cursor_y < 0:
                 dir = Direction.DOWN
                 cursor_y += 1
-                edge -= 2
+                if edge == 8:
+                    edge -= 3
+                else:
+                    edge -= 2 
                 print("down")
             if cursor_y == SIZE:
                 dir = Direction.UP
