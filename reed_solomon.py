@@ -22,17 +22,24 @@ def encode_rs(input: list[int]):
 
     return blocks[-7:]
 
+# Precompute tables
+EXP = [0] * 512
+LOG = [0] * 256
+x = 1
+for i in range(255):
+    EXP[i] = x
+    LOG[x] = i
+    x <<= 1
+    if x & 0x100:
+        x ^= 0x11D
+# Duplicate EXP to avoid modulo 255 during addition
+for i in range(255, 512):
+    EXP[i] = EXP[i - 255]
+
 def gf_multiply(a, b):
-    primitive_polynomial = 0x11D
-    result = 0
-    while b > 0:
-        if b % 2 == 1:
-            result ^= a
-        a <<= 1
-        if a >= 256:
-            a ^= primitive_polynomial
-        b >>= 1
-    return result
+    if a * b == 0:
+        return 0
+    return EXP[LOG[a] + LOG[b]]
 
 if __name__ == "__main__":
     print(encode_rs(

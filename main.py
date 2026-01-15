@@ -17,6 +17,8 @@ SIZE = TYPE1_SIZE
 QUALITY = LOW_QUALITY
 MAXLENGTH = TYPE1_LENGTH
 
+BORDER = 2
+
 class Direction(Enum):
     UP = 1
     DOWN = 2
@@ -61,7 +63,7 @@ def main():
     
     print(bits)
     # PIL accesses images in Cartesian co-ordinates, so it is Image[columns, rows]
-    img = Image.new( 'RGB', (SIZE * SCALE, SIZE * SCALE), (255, 0, 0)) # create a new black image
+    img = Image.new( 'RGB', ((SIZE + (BORDER * 2)) * SCALE, (SIZE + (BORDER * 2)) * SCALE), (255, 0, 0)) # create a new black image
     pixels = img.load() # create the pixel map
 
     add_functional_info(img)
@@ -76,23 +78,26 @@ def main():
     for bit in error_correction_string:
         bits.append(int(bit))
 
+    img.show("QR Code")
+
     # Add data into image
     stream_data(bits, img)
 
-    mask_data(img)
+    # mask_data(img)
 
     # Fix this after the mask
     add_functional_info(img)
+    add_border(img)
 
     img.show("QR Code")
 
 def stream_data(bits: list[int], img) -> None:
     # Set up a moving cursor and start in the bottom right
-    cursor_x = SIZE - 1
-    cursor_y = SIZE - 1
+    cursor_x = SIZE - 1 + BORDER
+    cursor_y = SIZE - 1 + BORDER
 
     # Used for restricting cursor movement
-    edge = SIZE - 1
+    edge = SIZE - 1 + BORDER
     dir = Direction.UP
 
     pixels = img.load()
@@ -110,15 +115,15 @@ def stream_data(bits: list[int], img) -> None:
                     cursor_x += 1
                     cursor_y += 1
             # switch direction if you hit the top or bottom
-            if cursor_y < 0:
+            if cursor_y < BORDER:
                 dir = Direction.DOWN
                 cursor_y += 1
-                if edge == 8:
+                if edge == 8 + BORDER:
                     edge -= 3
                 else:
                     edge -= 2 
                 print("down")
-            if cursor_y == SIZE:
+            if cursor_y == SIZE + BORDER:
                 dir = Direction.UP
                 cursor_y -= 1
                 edge -= 2
@@ -131,28 +136,42 @@ def is_used(coords, pixels) -> bool:
 
 def mask_data(img: Image):
     pixels = img.load()
-    for y in range(SIZE):
-        for x in range(SIZE):
+    for y in range(BORDER, SIZE+BORDER):
+        for x in range(BORDER, SIZE+BORDER):
             if y % 2 == 0:
                 make_square((x, y), 1, pixels[x * SCALE, y * SCALE] != (0, 0, 0), img, SCALE)
-    
+
+def add_border(img):
+    for x in range(SIZE+(2*BORDER)):
+        for y in range(BORDER):
+            make_square((x, y), 1, False, img, SCALE)
+    for y in range(SIZE+(2*BORDER)):
+        for x in range(BORDER):
+            make_square((x, y), 1, False, img, SCALE)
+    for x in range(SIZE+(2*BORDER)):
+        for y in range(SIZE+BORDER, SIZE+(2*BORDER)):
+            make_square((x, y), 1, False, img, SCALE)
+    for y in range(SIZE+(2*BORDER)):
+       for x in range(SIZE+BORDER, SIZE+(2*BORDER)):
+            make_square((x, y), 1, False, img, SCALE)
+
 def add_functional_info(img):
     # Basic Formatting on all QR Codes
-    make_square((0, 0), 8, False, img, SCALE)
-    make_square((0, SIZE-8), 8, False, img, SCALE)
-    make_square((SIZE-8, 0), 8, False, img, SCALE)
+    make_square((BORDER, BORDER), 8, False, img, SCALE)
+    make_square((BORDER, SIZE-8+BORDER), 8, False, img, SCALE)
+    make_square((SIZE-8+BORDER, BORDER), 8, False, img, SCALE)
 
-    make_square((8, SIZE-8), 1, True, img, SCALE)
+    make_square((8+BORDER, SIZE-8+BORDER), 1, True, img, SCALE)
 
-    make_corner((0, 0), img, SCALE)
-    make_corner((0, SIZE - 7), img, SCALE)
-    make_corner((SIZE - 7, 0), img, SCALE)
+    make_corner((BORDER, BORDER), img, SCALE)
+    make_corner((BORDER, SIZE - 7 + BORDER), img, SCALE)
+    make_corner((SIZE - 7 + BORDER, BORDER), img, SCALE)
 
-    for y in range(7, SIZE-7):
-        make_square((6, y), 1, y % 2 == 0, img, SCALE)
+    for y in range(7+BORDER, SIZE-7+BORDER):
+        make_square((6 + BORDER, y), 1, y % 2 == 0, img, SCALE)
 
-    for x in range(7, SIZE-7):
-        make_square((x, 6), 1, x % 2 == 0, img, SCALE)
+    for x in range(7+BORDER, SIZE-7+BORDER):
+        make_square((x, 6 + BORDER), 1, x % 2 == 0, img, SCALE)
 
     # Add format data into image
     format = (QUALITY << 2) + MASKPATTERN
@@ -169,8 +188,8 @@ def add_functional_info(img):
         (SIZE-5, 8), (SIZE-4, 8), (SIZE-3, 8), (SIZE-2, 8), (SIZE-1, 8) 
     ]
     for i in range(len(format_coords_1)):
-        make_square(format_coords_1[i], 1, (encoded_format >> (15 - i - 1)) & 1 == 1, img, SCALE)
-        make_square(format_coords_2[i], 1, (encoded_format >> (15 - i - 1)) & 1 == 1, img, SCALE)
+        make_square((format_coords_1[i][0]+BORDER, format_coords_1[i][1]+BORDER), 1, (encoded_format >> (15 - i - 1)) & 1 == 1, img, SCALE)
+        make_square((format_coords_2[i][0]+BORDER, format_coords_2[i][1]+BORDER), 1, (encoded_format >> (15 - i - 1)) & 1 == 1, img, SCALE)
 
 if __name__ == "__main__":
     main()
